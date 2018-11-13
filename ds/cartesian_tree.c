@@ -168,17 +168,45 @@ main(int argc, char **argv)
 {
     int a[] = { 9, 2, 8, 10, 1, 5, 6, 7, 2, 10, 3 };
     int i;
+    int n = countof(a);
+    int *p = a;
     cartesian_tree_t *tree = cartesian_tree_new(cmp_int);
 
-    for (i = 0; i < countof(a); ++i) {
-        cartesian_tree_add(tree, &a[i]);
+
+    scanf("%d", &n);
+
+    if (n > 0) {
+        int j;
+        p = malloc(n * sizeof(int));
+        
+        for (j = 0; j < n; ++j) {
+            scanf("%d", &p[j]);
+        }
+    }
+
+    for (i = 0; i < n; ++i) {
+        cartesian_tree_add(tree, &p[i]);
     }
 
     cartesian_tree_traverse(tree, CARTTREE_DIR_INORDER, print_int, NULL);
 
     fprintf(stdout, "\n");
 
-    cartesian_tree_free(tree); 
+    fprintf(stdout, "min: %d\n", *(int *)tree->root->data);
+
+    if (n >= 2) {
+        fprintf(stdout, "left: %d\n", *(int *)tree->root->left->data);
+    }
+
+    if (n >= 3) {
+        fprintf(stdout, "right: %d\n", *(int *)tree->root->right->data);
+    }
+
+    cartesian_tree_free(tree);
+
+    if (p != a) {
+        free(p);
+    }
 
     return 0;
 }

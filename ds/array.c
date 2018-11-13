@@ -13,57 +13,6 @@ struct array {
     size_t item_size;
 };
 
-/**
- * Dynamic array.
- *
- * One might store pointer to objects or the objects themselves
- * in the array.
- *
- * Amortized cost for insertions/deletions is O(1):
- *
- * Consider initial array size 1, and subsequent array insertion
- * operations having array expansions by factor (f) whenever array
- * is full:
- *
- * 1, 2, ..., (f), (f) + 1, (f) + 2, ..., (f)^2, (f)^2 + 1, ..., (f)^i, (f)^i + 1, ...  
- *    ^             ^                             ^               ^
- *    |             |                             |               | 
- *
- *  floor(f)    floor((f)^2)                  floor((f)^3)  floor((f)^(i + 1))
- *
- * where floor(f) is greatest integer less than or equal f.
- * 
- * The cost ci for i-th insertion operation is:
- *
- * ci = 1 + 
- *           (i - 1), if (i - 1) is a power of (f)
- *
- *           0, otherwise
- *
- * Amortized cost for insertions is: sum(ci)/n, for 1 < i < n
- *
- * sum(ci) = n + sum((f)^j), for 1 < j < floor(log(n-1)/log(f))
- *
- * sum(ci) = n + (f) * ((f)^floor(log(n-1)/log(f)) - 1) / (f - 1)  
- *         = n + (f) * ((n - 1) - 1) / (f - 1)
- *         = n + (f) * (n - 2) / (f - 1)
- *
- * Then sum(ci) / n = [ n + (f) * (n - 2) / (f - 1) ] / n
- *                  =   1 + [(f)/(f - 1)] * [(n - 2) / n]
- *                  = O(1). 
- *
- * Growth factor of 1.5 prevents wasting too much space
- * and rapidly run out of memory when expanding array.
- *
- * Shrinking the array when removing elements prevents
- * wasting too much space for unused slots.
- *
- * Different factors for growth and shrinkage protects 
- * against bad cases of consecutive alternate
- * insertions/removals which would degrade amortized
- * runtime.
- */
-
 #define ARRAY_MAX_CAPACITY ((size_t)-1)
 #define ARRAY_GROWTH_FACTOR (1.5)
 #define ARRAY_SHRINKAGE_FACTOR (0.5)
@@ -79,13 +28,31 @@ array_new(size_t capacity, size_t item_size)
         return NULL;
     }
 
-    a->array = malloc(capacity * item_size);
-    if (NULL == a->array) {
-        free(a);
-        return NULL;
+    if (capacity > 0) {
+        a->array = malloc(capacity * item_size);
+        if (NULL == a->array) {
+            free(a);
+            return NULL;
+        }
     }
     a->capacity = capacity;
     a->size = 0;
+    a->item_size = item_size;
+
+    return a;
+}
+
+array_t *
+array_build(void *b, size_t n, size_t item_size)
+{
+    array_t *a = calloc(1, sizeof(array_t));
+    if (NULL == a) {
+        return NULL;
+    }
+
+    a->array = b;
+    a->capacity = n;
+    a->size = n;
     a->item_size = item_size;
 
     return a;
@@ -99,17 +66,6 @@ array_free(array_t *a)
         a->array = NULL;
         free(a);
     }
-}
-
-void *
-array_top(array_t *a)
-{
-    if (a->size == 0) {
-        return NULL;
-    }
-
-    return array_item_get(a, 0);
-    
 }
 
 static int
@@ -126,7 +82,7 @@ array_expand(array_t *a)
         }
         else {
             /**
-             * Interesting fact:
+             * Reason for this adjustment:
              * 
              * Consider growth factor f, 1 < f < 2, and i-th capacity expansion.
              *
@@ -138,7 +94,9 @@ array_expand(array_t *a)
              *              iff: i * log(f) + log(f - 1) >= 0
              *              iff: i >= -log(f - 1)/log(f)
              *
-             * Let's take the minimum possible i, i = ceil(-log(f - 1)/log(f)).
+             * Let's take the minimum possible i, i = ceil(-log(f - 1)/log(f))
+             *
+             * where ceil(f) is the smallest integer greater or equal to f.
              *
              * For a growth factor f = 1.5: i = ceil(-log(1.5 - 1)/log(1.5))
              *                                = ceil(-log(0.5)/log(1.5))
@@ -159,9 +117,6 @@ array_expand(array_t *a)
     return 0;
 }
 
-/**
- * Insert new element at the end of the array.
- */
 int
 array_push_back(array_t *a, void *data)
 {
@@ -195,7 +150,9 @@ array_pop_back(array_t *a, void *data)
         return NULL;
     }
     --a->size;
-    memcpy(data, array_item_get(a, a->size), a->item_size);
+    if (NULL != data) {
+        memcpy(data, array_item_get(a, a->size), a->item_size);
+    }
     array_shrink(a);
     return data;
 }
@@ -207,24 +164,148 @@ array_size(array_t *a)
 }
 
 size_t
+array_item_size(array_t *a)
+{
+    return a->item_size;
+}
+
+size_t
 array_capacity(array_t *a)
 {
     return a->capacity;
 }
 
-void *
-array_first(array_t *a)
+int
+array_insert(array_t *a, void *data, int index)
 {
-    return a->array;
+    if (index > a->size) {
+        return -1;
+    }
+    if (index == a->size) {
+        return array_push_back(a, data);
+    }
+    if (array_expand(a) < 0) {
+        return -1;
+    }
+    memmove(array_item_get(a, index + 1), array_item_get(a, index), a->item_size * (a->size - index));
+    memcpy(array_item_get(a, index), data, a->item_size);
+    a->size++;
+    return 0;
 }
 
 void *
-array_next(array_t *a, void *next)
+array_remove(array_t *a, void *data, int index)
 {
-    char *p = next;
+    if (index >= a->size) {
+        return NULL;
+    }
+    if (index == a->size - 1) {
+        return array_pop_back(a, data);
+    }
+    if (a->size == 0) {
+        return NULL;
+    }
+    if (NULL != data) {
+        memcpy(data, array_item_get(a, index), a->item_size);
+    }
+    memmove(array_item_get(a, index), array_item_get(a, index + 1), a->item_size * (a->size - index - 1));
+    --a->size;
+    array_shrink(a);
+    return data;
+}
+
+void *
+array_get(array_t *a, int index)
+{
+    return array_item_get(a, index);
+}
+
+void *
+array_top(array_t *a)
+{
+    if (a->size == 0) {
+        return NULL;
+    }
+
+    return array_item_get(a, 0);
+}
+
+void *
+array_back(array_t *a)
+{
+    if (a->size == 0) {
+        return NULL;
+    }
+
+    return array_item_get(a, a->size - 1);
+}
+
+void *
+array_next(array_t *a, void *current)
+{
+    char *p = current;
     char *end = ((char *)a->array) + a->size * a->item_size;
     if (p + a->item_size < end) {
         return p + a->item_size;
     }
     return NULL;
+}
+
+void *
+array_previous(array_t *a, void *current)
+{
+    char *p = current;
+    char *end = ((char *)a->array) - a->item_size;
+    if (p - a->item_size > end) {
+        return p - a->item_size;
+    }
+    return NULL;
+}
+
+void
+array_swap(array_t *array, int i, int j)
+{
+    size_t size = array_item_size(array);
+    char *a = array_get(array, i);
+    char *b = array_get(array, j);
+
+    do {
+        char tmp = *a;
+        *a++ = *b;
+        *b++ = tmp;
+    } while (--size > 0);
+}
+
+void *
+array_copy(array_t *a, void *data, int i)
+{
+    if (i >= a->size) {
+        return NULL;
+    }
+
+    if (NULL == data) {
+        return NULL;
+    }
+
+    memcpy(data, array_get(a, i), a->item_size);
+
+    return data;
+}
+
+void
+array_size_dec(array_t *a)
+{
+    if (a->size) {
+        --a->size;
+    }
+}
+
+void *
+array_detach(array_t *a)
+{
+    void *array = a->array;
+    a->array = NULL;
+    a->size = 0;
+    a->capacity = 0;
+    return array;
 }
