@@ -277,9 +277,12 @@ array_swap(array_t *array, int i, int j)
 }
 
 void *
-array_copy(array_t *a, void *data, int i)
+array_copy(array_t *a, void *data, int index, int count)
 {
-    if (i >= a->size) {
+    if (index < 0 || count <= 0) {
+        return NULL;
+    }
+    if (index + count > a->size) {
         return NULL;
     }
 
@@ -287,7 +290,7 @@ array_copy(array_t *a, void *data, int i)
         return NULL;
     }
 
-    memcpy(data, array_get(a, i), a->item_size);
+    memcpy(data, array_get(a, index), a->item_size * count);
 
     return data;
 }

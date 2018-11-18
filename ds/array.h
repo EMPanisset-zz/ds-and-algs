@@ -241,15 +241,15 @@ void *
 array_detach(array_t *a);
 
 /**
- * @brief Copy object at position i to buffer data
+ * @brief Copy count objects from position index to buffer data
  *
  * @param a array object
- * @param data buffer to store copied object
- * @param index position at which object to be copied
- *        is stored
+ * @param data buffer to store copied objects
+ * @param index position from which objects should be copied
+ * @param count number of objects to be copied
  * @return data pointer passed as a argument.
  */
 void *
-array_copy(array_t *a, void *data, int index);
+array_copy(array_t *a, void *data, int index, int count);
 
 #endif /* _ARRAY__H_ */
