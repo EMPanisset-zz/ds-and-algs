@@ -217,7 +217,7 @@ heap_pop_front(heap_t *h, void *top)
         array_pop_back(h->array, top);
     }
     else {
-        array_copy(h->array, top, 0); 
+        array_copy(h->array, top, 0, 1);
         array_pop_back(h->array, array_top(h->array));
 
         if (h->update) {
