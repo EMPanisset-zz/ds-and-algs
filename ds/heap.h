@@ -180,7 +180,8 @@ heap_capacity(heap_t *h);
  *
  * @param h heap object
  */
-void *
+struct array; 
+struct array *
 heap_array(heap_t *h);
 
 #endif /* _HEAP__H_ */
