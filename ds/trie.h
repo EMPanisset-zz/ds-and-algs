@@ -5,10 +5,10 @@
 
 typedef struct trie trie_t;
 
-typedef void (*trie_match_fn_t)(int, int, void *);
+typedef void (*trie_match_cb_t)(void *, void *);
 
 trie_t *
-trie_new(void);
+trie_new(trie_match_cb_t match);
 
 void
 trie_free(trie_t *trie);
@@ -16,10 +16,7 @@ trie_free(trie_t *trie);
 int
 trie_add(trie_t *trie, const char *key, void *data);
 
-void
-trie_match_all(trie_t *trie, const char *text, trie_match_fn_t match, void *arg);
-
-void
-trie_print(trie_t *trie);
+bool
+trie_match_all(trie_t *trie, const char *key, void *arg);
 
 #endif /* _TRIE__H__ */
