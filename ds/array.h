@@ -62,12 +62,6 @@
 #define array_rforeach(a, c) \
     for ((c) = array_back((a)); (c); (c) = array_previous((a), (c)))
 
-#define array_foreach_safe(a, c, n) \
-    for ((c) = array_top((a)); (c) && ((n) = array_next((a), (c)), 1); (c) = (n))
-
-#define array_rforeach_safe(a, c, n) \
-    for ((c) = array_back((a)); (c) && ((n) = array_previous((a), (c)), 1); (c) = (n))
-
 typedef struct array array_t;
 
 /**
