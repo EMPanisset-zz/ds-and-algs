@@ -221,7 +221,7 @@ array_get(array_t *a, int index)
 }
 
 void *
-array_top(array_t *a)
+array_front(array_t *a)
 {
     if (a->size == 0) {
         return NULL;

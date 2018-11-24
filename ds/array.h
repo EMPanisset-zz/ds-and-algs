@@ -57,7 +57,7 @@
 
 
 #define array_foreach(a, c) \
-    for ((c) = array_top((a)); (c); (c) = array_next((a), (c)))
+    for ((c) = array_front((a)); (c); (c) = array_next((a), (c)))
 
 #define array_rforeach(a, c) \
     for ((c) = array_back((a)); (c); (c) = array_previous((a), (c)))
@@ -181,7 +181,7 @@ array_capacity(array_t *a);
  * @brief Return pointer to array's head 
  */
 void *
-array_top(array_t *a);
+array_front(array_t *a);
 
 /**
  * @brief Return pointer to object at array's tail
